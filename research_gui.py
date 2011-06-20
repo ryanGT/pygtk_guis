@@ -14,8 +14,10 @@ from numpy import *
 # uncomment to select /GTK/GTKAgg/GTKCairo
 #from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
+from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as NavigationToolbar
 #from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
 
+pack_args_w_pad = (False, False, 5)
 
 class base_class(object):
     """This is the base class for all research guis that use pygtk to
@@ -42,8 +44,66 @@ class base_class(object):
 
     def destroy(self, widget, data=None):
         print "destroy signal occurred"
-        self.test.Close_Serial()
+        if hasattr(self, 'test'):
+            self.test.Close_Serial()
         gtk.main_quit()
+
+
+    def save_data(self, widget, data=None):
+        """This method saves the data on the figure canvas to a text
+        file.  It assumes that the plot method set the parameter
+        self.save_test.  It is the data from this test that gets
+        saved."""
+        dialog = gtk.FileChooserDialog("Save As..",
+                                       None,
+                                       gtk.FILE_CHOOSER_ACTION_SAVE,
+                                       #gtk.FILE_CHOOSER_ACTION_OPEN,
+                                       (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                                        gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+            #gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+        dialog.set_default_response(gtk.RESPONSE_OK)
+
+        filter = gtk.FileFilter()
+        filter.set_name("txt files")
+        filter.add_pattern("*.txt")
+        dialog.add_filter(filter)
+
+        filter = gtk.FileFilter()
+        filter.set_name("All files")
+        filter.add_pattern("*")
+        dialog.add_filter(filter)
+
+
+        response = dialog.run()
+        out = None
+        if response == gtk.RESPONSE_OK:
+            print dialog.get_filename(), 'selected'
+            out = dialog.get_filename()
+        elif response == gtk.RESPONSE_CANCEL:
+            print 'Closed, no files selected'
+        dialog.destroy()
+
+        if out is not None:
+            fno, ext = os.path.splitext(out)
+            self.save_test.Save(fno)
+
+
+    def plot_results(self, legloc=4, test=None):
+        if test is None:
+            test = self.test
+
+        self.save_test = test
+        
+        self.ax.cla()
+        self.t = test.nvect*self.test.dt
+        for attr, label in zip(self.plot_attrs, self.plot_labels):
+            if hasattr(test, attr):
+                data = getattr(test, attr)
+                self.ax.plot(self.t, data, label=label)
+        self.ax.legend(loc=legloc)
+        self.ax.set_xlabel('Time (sec.)')
+        self.ax.set_ylabel('Signal Amplitude (counts)')
+        self.fig.canvas.draw()
 
 
     def add_controls_above_notebook(self):
@@ -54,7 +114,59 @@ class base_class(object):
         pass
 
 
-    def __init__(self, debug=0):
+    def add_notebook(self):
+        self.input_notebook = input_generation.input_gen_notebook()
+        self.input_notebook.show()
+        self.control_vbox.pack_start(self.input_notebook, *pack_args_w_pad)# True, True, 5)
+
+
+    def run_test(self, *args, **kwargs):
+        pass
+
+    
+    def add_run_test_button(self):
+        self.run_test_button = gtk.Button("Run Test")
+        # Add the run_test button to the gui
+        self.control_vbox.pack_start(self.run_test_button, *pack_args_w_pad)
+        self.run_test_button.connect("clicked", self.run_test, None)
+
+
+    def add_save_data_button(self):
+        self.save_data_button = gtk.Button("Save Data")
+        # Add the run_test button to the gui
+        self.control_vbox.pack_start(self.save_data_button, *pack_args_w_pad)
+        self.save_data_button.connect("clicked", self.save_data, None)
+
+
+    def add_figure_canvas(self):
+        """Note: this method assumed self.main_hbox is already
+        defined.  A figure canvas with a toolbar at the bottom is
+        added to self.main_hbox."""
+        self.fig = Figure(figsize=(5,4), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        t = arange(0.0,3.0,0.01)
+        s = sin(2*pi*t)
+        self.ax.plot(t,s)
+
+        self.figcanvas = FigureCanvas(self.fig)  # a gtk.DrawingArea
+        self.figcanvas.show()
+        self.canvas_vbox = gtk.VBox()
+        toolbar = NavigationToolbar(self.figcanvas, self.window)
+        #toolbar.set_size_request(-1,50)
+        self.figcanvas.set_size_request(600,300)
+        toolbar.set_size_request(600,50)
+        toolbar.show()
+        self.canvas_vbox.pack_start(self.figcanvas)#, expand=True, \
+            #fill=True, padding=5)
+        self.canvas_vbox.pack_start(toolbar, False)#, False)#, padding=5)
+        self.main_hbox.pack_start(self.canvas_vbox)#, expand=True, \
+            #fill=True, padding=5)
+
+        
+    def __init__(self, title='Research GUI', \
+                 plot_attrs=['uvect','yvect'], \
+                 plot_labels=['u','$\\theta$'], \
+                 width=1000, height=700, debug=0):
         self.debug = debug
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -76,6 +188,7 @@ class base_class(object):
 
         
         main_hbox = gtk.HBox(homogeneous=False, spacing=5)
+        self.main_hbox = main_hbox
         control_vbox = gtk.VBox(homogeneous=False, spacing=5)
         self.control_vbox = control_vbox#control_vbox is assumed to be
                                         #the name of the vbox on the
@@ -85,6 +198,29 @@ class base_class(object):
         self.add_notebook()
         self.add_run_test_button()
         self.add_save_data_button()
+
+        #add the two main vboxes (control_vbox and canvas_vbox) to the hbox:
         main_hbox.pack_start(self.control_vbox, False, False, 0)
-        self.main_hbox = main_hbox
+        self.add_figure_canvas()
+
         self.window.add(self.main_hbox)
+
+        self.window.set_size_request(width, height)
+
+        self.window.set_title(title)
+        # and the window
+        #self.window.show()
+        self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window.show_all()
+
+
+    def main(self):
+        # All PyGTK applications must have a gtk.main(). Control ends here
+        # and waits for an event to occur (like a key press or mouse event).
+        gtk.main()
+
+
+if __name__ == "__main__":
+    myapp = base_class()
+    #myapp.window.resize(400,300)
+    myapp.main()

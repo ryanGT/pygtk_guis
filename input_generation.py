@@ -67,8 +67,8 @@ class input_page(gtk.VBox):
         
 
 
-class swept_sine_page(input_page):
-    def __init__(self, title='Swept Sine', \
+class step_page(input_page):
+    def __init__(self, title='Step', \
                  labels=['amp.', 'start ind', 'dur.'], \
                  attrs=['amp', 'start', 'dur',], \
                  defaults=['50', '50', '1000']):
@@ -113,8 +113,8 @@ class impulse_page(input_page):
         
 class input_gen_notebook(gtk.Notebook):
     def _create_pages(self):
-        class_list = [swept_sine_page, impulse_page]
-        attr_list = ['swept_sine_page', 'impulse_page']
+        class_list = [step_page, impulse_page]
+        attr_list = ['step_page', 'impulse_page']
         for cur_class, attr in zip(class_list, attr_list):
             page = cur_class()
             setattr(self, attr, page)
