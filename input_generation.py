@@ -115,11 +115,13 @@ class input_gen_notebook(gtk.Notebook):
     def _create_pages(self):
         class_list = [step_page, impulse_page]
         attr_list = ['step_page', 'impulse_page']
+        self.pages = []
         for cur_class, attr in zip(class_list, attr_list):
             page = cur_class()
             setattr(self, attr, page)
             tab_label = gtk.Label(page.title)
             self.append_page(page, tab_label)
+            self.pages.append(page)
 
         
     def __init__(self, *args, **kwargs):

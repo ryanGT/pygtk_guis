@@ -120,7 +120,7 @@ class base_class(object):
         self.control_vbox.pack_start(self.input_notebook, *pack_args_w_pad)# True, True, 5)
 
 
-    def run_test(self, *args, **kwargs):
+    def run_test(self, widget, data=None):
         pass
 
     

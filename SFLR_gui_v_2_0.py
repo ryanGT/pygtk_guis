@@ -24,8 +24,23 @@ import time, copy, os
 neg_accel = True
 
 class SFLR_gui(research_gui.base_class):
-    # This is a callback function. The data arguments are ignored
-    # in this example. More on callbacks below.
+    def get_test(self):
+        return self.test
+        
+    def run_test(self, widget, data=None):
+        print('in the SFLR_gui.run_test method.')
+        ind = self.input_notebook.get_current_page()
+        print('current page = %i' % ind)
+        cur_page = self.input_notebook.pages[ind]
+        print('title = %s' % cur_page.title)
+        u = cur_page.create_u_vect()
+        mytest = self.get_test()#eventually there will be an open or closed-loop radio button
+        mytest.Run_Test(u, plot=False)
+        mytest.Close_Serial()
+        self.plot_results(test=mytest)
+
+        
+
     def swept_sine_test(self, widget, data=None):
         print('in swept_sine_test')
         self.test.use_accel_fb = False
@@ -237,7 +252,7 @@ class SFLR_gui(research_gui.base_class):
         self.test = SLFR_RTP.Motor_Comp_w_accel_fb(self.Gth, Ga=None, stopn=1000, \
                                                    neg_accel=neg_accel)
         self.test.use_accel_fb = False
-
+        
 
 
     def main(self):
