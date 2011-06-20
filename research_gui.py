@@ -17,6 +17,8 @@ from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanva
 from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTKAgg as NavigationToolbar
 #from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
 
+import time, copy, os
+
 pack_args_w_pad = (False, False, 5)
 
 class base_class(object):
@@ -168,6 +170,8 @@ class base_class(object):
                  plot_labels=['u','$\\theta$'], \
                  width=1000, height=700, debug=0):
         self.debug = debug
+        self.plot_attrs = plot_attrs
+        self.plot_labels = plot_labels
         # create a new window
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
 
@@ -198,6 +202,7 @@ class base_class(object):
         self.add_notebook()
         self.add_run_test_button()
         self.add_save_data_button()
+        self.add_controls_below_notebook()
 
         #add the two main vboxes (control_vbox and canvas_vbox) to the hbox:
         main_hbox.pack_start(self.control_vbox, False, False, 0)

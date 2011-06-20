@@ -33,8 +33,11 @@ class SFLR_gui(research_gui.base_class):
         print('current page = %i' % ind)
         cur_page = self.input_notebook.pages[ind]
         print('title = %s' % cur_page.title)
-        u = cur_page.create_u_vect()
+        u = self.input_notebook.get_u()
         mytest = self.get_test()#eventually there will be an open or closed-loop radio button
+        mytest.Reset_Theta()
+        mytest.Software_Zero()
+        time.sleep(0.05)
         mytest.Run_Test(u, plot=False)
         mytest.Close_Serial()
         self.plot_results(test=mytest)
@@ -224,8 +227,10 @@ class SFLR_gui(research_gui.base_class):
     
 
     def __init__(self, debug=0):
-        attrs = ['uvect','vvect','yvect','avect','thd_hatvect']
-        labels = ['u','v','$\\theta$','a','$\\hat{\\theta}_d$']
+        ## attrs = ['uvect','vvect','yvect','avect','thd_hatvect']
+        ## labels = ['u','v','$\\theta$','a','$\\hat{\\theta}_d$']
+        attrs = ['uvect','yvect','avect']
+        labels = ['u','$\\theta$','a']
 
         research_gui.base_class.__init__(self, title='SFLR GUI v. 2.0', \
                                          debug=debug, \
@@ -252,6 +257,7 @@ class SFLR_gui(research_gui.base_class):
         self.test = SLFR_RTP.Motor_Comp_w_accel_fb(self.Gth, Ga=None, stopn=1000, \
                                                    neg_accel=neg_accel)
         self.test.use_accel_fb = False
+        self.input_notebook.set_current_page(1)
         
 
 
