@@ -24,8 +24,41 @@ import time, copy, os
 neg_accel = True
 
 class SFLR_gui(research_gui.base_class):
-    def get_test(self):
-        return self.test
+    def _get_test_case_number(self):
+        comp_on = self.comp_radio.get_active()
+        P_control_on = self.P_control_radio.get_active()
+        ol_on = self.ol_radio.get_active()
+
+        if self.debug > 0:
+            print('comp_on = %s' % comp_on)
+            print('P_control_on = %s' % P_control_on)
+            print('ol_on = %s' % ol_on)
+            
+        if ol_on:
+            return 3
+        elif P_control_on:
+            return 2
+        elif comp_on:
+            return 1
+        else:
+            return -1
+            
+    
+    def get_test(self, ind=0):
+        test_ind = self._get_test_case_number()
+        if test_ind == 3:
+            if ind == 1:
+                return self.OL_test
+            else:
+                print('Open-loop testing is only supported for impulse tests.  Exitting.')
+                return None
+        elif test_ind == 2:
+            return self.P_control_test
+        elif test_ind == 1:
+            return self.comp_test
+        else:
+            return None
+            
         
     def run_test(self, widget, data=None):
         print('in the SFLR_gui.run_test method.')
@@ -34,10 +67,24 @@ class SFLR_gui(research_gui.base_class):
         cur_page = self.input_notebook.pages[ind]
         print('title = %s' % cur_page.title)
         u = self.input_notebook.get_u()
-        mytest = self.get_test()#eventually there will be an open or closed-loop radio button
+        mytest = self.get_test(ind)#eventually there will be an open or closed-loop radio button
+        if mytest is None:
+            print('mytest is None.  Exitting')
+            return
+        test_ind = self._get_test_case_number()
         mytest.Reset_Theta()
         mytest.Software_Zero()
         time.sleep(0.05)
+        if ind==0:
+            print('test_ind = ' + str(test_ind))
+            if test_ind==1:#vibration suppression is only supported for the compensator controller
+                print('I am about to run a step response.')
+                self._set_vib_supress()
+            else:
+                self._vib_suppress_off()
+        else:
+            print('not running a step test')
+            self._vib_suppress_off()
         mytest.Run_Test(u, plot=False)
         mytest.Close_Serial()
         self.plot_results(test=mytest)
@@ -65,11 +112,12 @@ class SFLR_gui(research_gui.base_class):
         #self.test.Swept_Sine(**kwargs)
         #self.test.Notched_Swept_Sine(G_notch, **kwargs)
         self.test.Close_Serial()
-        self.P_control_test = SLFR_RTP.P_control_Test(kp=1.0, neg_accel=neg_accel)
         self.P_control_test.Swept_Sine(**kwargs)
         self.plot_results(test=self.P_control_test, legloc=3)
 
 
+    def _vib_suppress_off(self):
+        self.test.use_accel_fb = False
         
 
     def _set_vib_supress(self):
@@ -81,10 +129,10 @@ class SFLR_gui(research_gui.base_class):
             print('vib_off = %s' % vib_off)
 
         if vib_on:
-            self.test.Ga_z = self.Ga_z
-            self.test.use_accel_fb = True
+            self.comp_test.Ga_z = self.Ga_z
+            self.comp_test.use_accel_fb = True
         else:
-            self.test.use_accel_fb = False
+            self.comp_test.use_accel_fb = False
 
         
     def step_test(self, widget, data=None):
@@ -128,7 +176,6 @@ class SFLR_gui(research_gui.base_class):
 
 
     def run_ol_test(self, u):
-        self.OL_test = SLFR_RTP.OL_Test(neg_accel=neg_accel)
         self.OL_test.Reset_Theta()
         self.OL_test.Run_Test(u, plot=False)
         self.OL_test.Close_Serial()
@@ -164,8 +211,8 @@ class SFLR_gui(research_gui.base_class):
         
     def return_to_zero(self, widget, data=None):
         self._set_vib_supress()
-        self.test.Step_Response(0, plot=False)
-        self.test.Close_Serial()
+        self.comp_test.Step_Response(0, plot=False)
+        self.comp_test.Close_Serial()
         
 
     def reset_theta(self, widget, data=None):
@@ -187,6 +234,12 @@ class SFLR_gui(research_gui.base_class):
         self.return_button = gtk.Button("Return to 0")
 
 
+        #Controller selection
+        self.comp_radio = gtk.RadioButton(None, "Compensator")
+        self.P_control_radio = gtk.RadioButton(self.comp_radio, "P Control")
+        self.ol_radio = gtk.RadioButton(self.comp_radio, "Open Loop")
+        self.comp_radio.set_active(True)
+        controller_label = gtk.Label("Controller Selection")
         #self.vib_check = gtk.CheckButton(label="Use Vibration Suppression", \
         #                                 use_underline=False)
         self.vib_on_radio = gtk.RadioButton(None, "On")
@@ -195,6 +248,7 @@ class SFLR_gui(research_gui.base_class):
         self.vib_off_radio.set_active(True)
         vib_label = gtk.Label("Vibration Suppression")
 
+        sep0 = gtk.HSeparator()
         sep1 = gtk.HSeparator()
         sep2 = gtk.HSeparator()
         ## sep3 = gtk.HSeparator()
@@ -216,6 +270,12 @@ class SFLR_gui(research_gui.base_class):
 
         # Add system check button to gui
         # Add input generation notebook to gui
+        self.control_vbox.pack_start(sep0, False)
+        self.control_vbox.pack_start(controller_label, False)
+        self.control_vbox.pack_start(self.comp_radio, False)
+        self.control_vbox.pack_start(self.P_control_radio, False)
+        self.control_vbox.pack_start(self.ol_radio, False)
+        
         self.control_vbox.pack_start(sep1, False)
         # Add vibration suppression radio to gui
         self.control_vbox.pack_start(vib_label, False)
@@ -257,6 +317,9 @@ class SFLR_gui(research_gui.base_class):
         self.test = SLFR_RTP.Motor_Comp_w_accel_fb(self.Gth, Ga=None, stopn=1000, \
                                                    neg_accel=neg_accel)
         self.test.use_accel_fb = False
+        self.comp_test = copy.deepcopy(self.test)
+        self.P_control_test = SLFR_RTP.P_control_Test(kp=2.0, neg_accel=neg_accel)
+        self.OL_test = SLFR_RTP.OL_Test(neg_accel=neg_accel)
         self.input_notebook.set_current_page(1)
         
 
