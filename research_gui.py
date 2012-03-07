@@ -140,11 +140,11 @@ class base_class(object):
         self.save_data_button.connect("clicked", self.save_data, None)
 
 
-    def add_figure_canvas(self):
+    def add_figure_canvas(self, w=700, h=500):
         """Note: this method assumed self.main_hbox is already
         defined.  A figure canvas with a toolbar at the bottom is
         added to self.main_hbox."""
-        self.fig = Figure(figsize=(5,4), dpi=100)
+        self.fig = Figure(figsize=(8,6), dpi=100)
         self.ax = self.fig.add_subplot(111)
         t = arange(0.0,3.0,0.01)
         s = sin(2*pi*t)
@@ -155,8 +155,8 @@ class base_class(object):
         self.canvas_vbox = gtk.VBox()
         toolbar = NavigationToolbar(self.figcanvas, self.window)
         #toolbar.set_size_request(-1,50)
-        self.figcanvas.set_size_request(600,300)
-        toolbar.set_size_request(600,50)
+        self.figcanvas.set_size_request(w,h)
+        toolbar.set_size_request(w,50)
         toolbar.show()
         self.canvas_vbox.pack_start(self.figcanvas)#, expand=True, \
             #fill=True, padding=5)
