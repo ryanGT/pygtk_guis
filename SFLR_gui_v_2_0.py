@@ -21,7 +21,8 @@ from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanva
 import SLFR_RTP, controls
 import time, copy, os
 
-neg_accel = True
+#neg_accel = True
+neg_accel = False
 
 class SFLR_gui(research_gui.base_class):
     def _get_test_case_number(self):
