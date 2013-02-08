@@ -48,12 +48,17 @@ class SFLR_gui(research_gui.base_class):
     def get_test(self, ind=0):
         test_ind = self._get_test_case_number()
         if test_ind == 3:
-            if ind == 1:
-                return self.OL_test
-            else:
-                print('Open-loop testing is only supported for impulse tests.  Exitting.')
-                return None
+            #allowing OL step responses and such
+            return self.OL_test
+            ## if ind == 1:
+            ##     return self.OL_test
+            ## else:
+            ##     print('Open-loop testing is only supported for impulse tests.  Exitting.')
+            ##     return None
         elif test_ind == 2:
+            kp_str = self.kp_entry.get_text()
+            kp = float(kp_str)
+            self.P_control_test.kp = kp
             return self.P_control_test
         elif test_ind == 1:
             return self.comp_test
@@ -239,8 +244,17 @@ class SFLR_gui(research_gui.base_class):
         self.comp_radio = gtk.RadioButton(None, "Compensator")
         self.P_control_radio = gtk.RadioButton(self.comp_radio, "P Control")
         self.ol_radio = gtk.RadioButton(self.comp_radio, "Open Loop")
-        self.comp_radio.set_active(True)
+        #self.comp_radio.set_active(True)
+        self.ol_radio.set_active(True)
         controller_label = gtk.Label("Controller Selection")
+        self.kp_entry = gtk.Entry()
+        kplabel = gtk.Label('Kp')
+        kplabel.show()
+        self.kp_entry.set_size_request(50, -1)
+        self.kp_entry.set_max_length(10)
+        self.kp_entry.set_text('1.0')
+        self.kp_entry.show()
+
         #self.vib_check = gtk.CheckButton(label="Use Vibration Suppression", \
         #                                 use_underline=False)
         self.vib_on_radio = gtk.RadioButton(None, "On")
@@ -276,6 +290,10 @@ class SFLR_gui(research_gui.base_class):
         self.control_vbox.pack_start(self.comp_radio, False)
         self.control_vbox.pack_start(self.P_control_radio, False)
         self.control_vbox.pack_start(self.ol_radio, False)
+        kp_hbox = gtk.HBox(homogeneous=False)
+        kp_hbox.pack_start(kplabel, False)
+        kp_hbox.pack_start(self.kp_entry, False)
+        self.control_vbox.pack_start(kp_hbox)
         
         self.control_vbox.pack_start(sep1, False)
         # Add vibration suppression radio to gui
@@ -290,10 +308,16 @@ class SFLR_gui(research_gui.base_class):
     def __init__(self, debug=0):
         ## attrs = ['uvect','vvect','yvect','avect','thd_hatvect']
         ## labels = ['u','v','$\\theta$','a','$\\hat{\\theta}_d$']
-        attrs = ['uvect','yvect','avect']
-        labels = ['u','$\\theta$','a']
+        attrs = ['uvect','yvect']
+        labels = ['u','$\\theta$']
+        
+        plot_accel = False
+        if plot_accel:
+            attrs.append('avect')
+            labels.append('a')
+            
 
-        research_gui.base_class.__init__(self, title='SFLR GUI v. 2.0', \
+        research_gui.base_class.__init__(self, title='SFLR GUI v. 3.0 - ME 450', \
                                          debug=debug, \
                                          plot_attrs=attrs, \
                                          plot_labels=labels)

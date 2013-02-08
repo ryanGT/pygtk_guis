@@ -81,7 +81,7 @@ class step_page(input_page):
     def __init__(self, title='Step', \
                  labels=['amp.', 'start ind', 'dur.'], \
                  attrs=['amp', 'start', 'dur',], \
-                 defaults=['50', '50', '1000']):
+                 defaults=['100', '50', '1000']):
         input_page.__init__(self, title=title, \
                             labels=labels, \
                             attrs=attrs, \
