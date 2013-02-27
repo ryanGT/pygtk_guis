@@ -28,6 +28,7 @@ class SFLR_gui(research_gui.base_class):
     def _get_test_case_number(self):
         comp_on = self.comp_radio.get_active()
         P_control_on = self.P_control_radio.get_active()
+        PID_control_on = self.PID_control_radio.get_active()
         ol_on = self.ol_radio.get_active()
 
         if self.debug > 0:
@@ -41,6 +42,8 @@ class SFLR_gui(research_gui.base_class):
             return 2
         elif comp_on:
             return 1
+        elif PID_control_on:
+            return 4
         else:
             return -1
             
@@ -55,11 +58,25 @@ class SFLR_gui(research_gui.base_class):
             ## else:
             ##     print('Open-loop testing is only supported for impulse tests.  Exitting.')
             ##     return None
-        elif test_ind == 2:
+        elif test_ind in [2,4]:
             kp_str = self.kp_entry.get_text()
             kp = float(kp_str)
-            self.P_control_test.kp = kp
-            return self.P_control_test
+            ki_str = self.ki_entry.get_text()
+            ki = float(ki_str)
+            kd_str = self.kd_entry.get_text()
+            kd = float(kd_str)
+            if test_ind == 2:
+                self.P_control_test.kp = kp
+                return self.P_control_test
+            elif test_ind == 4:
+                print('PID test')
+                print('kp = %0.4g' % kp)
+                print('ki = %0.4g' % ki)
+                print('kd = %0.4g' % kd)
+                self.PID_control_test.kp = kp
+                self.PID_control_test.ki = ki
+                self.PID_control_test.kd = kd
+                return self.PID_control_test
         elif test_ind == 1:
             return self.comp_test
         else:
@@ -236,6 +253,7 @@ class SFLR_gui(research_gui.base_class):
 
     def add_controls_below_notebook(self):
         # Creates a new button with the label "Hello World".
+        
         self.reset_button = gtk.Button("Reset Theta")
         self.return_button = gtk.Button("Return to 0")
 
@@ -243,17 +261,29 @@ class SFLR_gui(research_gui.base_class):
         #Controller selection
         self.comp_radio = gtk.RadioButton(None, "Compensator")
         self.P_control_radio = gtk.RadioButton(self.comp_radio, "P Control")
+        self.PID_control_radio = gtk.RadioButton(self.comp_radio, "PID Control")
         self.ol_radio = gtk.RadioButton(self.comp_radio, "Open Loop")
         #self.comp_radio.set_active(True)
-        self.ol_radio.set_active(True)
+        #self.ol_radio.set_active(True)
+        self.PID_control_radio.set_active(True)
         controller_label = gtk.Label("Controller Selection")
-        self.kp_entry = gtk.Entry()
-        kplabel = gtk.Label('Kp')
-        kplabel.show()
-        self.kp_entry.set_size_request(50, -1)
-        self.kp_entry.set_max_length(10)
-        self.kp_entry.set_text('1.0')
-        self.kp_entry.show()
+        labels = ['Kp','Ki','Kd']
+        for label in labels:
+            cur_entry = gtk.Entry()
+            cur_label = gtk.Label(label)
+            cur_label.show()
+            cur_entry.set_size_request(50, -1)
+            cur_entry.set_max_length(10)
+            if label == 'Kp':
+                cur_entry.set_text('1.0')
+            else:
+                cur_entry.set_text('0.0')
+            cur_entry.show()
+            label_attr = label.lower() + '_label'
+            entry_attr = label.lower() + '_entry'
+            setattr(self, label_attr, cur_label)
+            setattr(self, entry_attr, cur_entry)
+            
 
         #self.vib_check = gtk.CheckButton(label="Use Vibration Suppression", \
         #                                 use_underline=False)
@@ -285,21 +315,47 @@ class SFLR_gui(research_gui.base_class):
 
         # Add system check button to gui
         # Add input generation notebook to gui
-        self.control_vbox.pack_start(sep0, False)
-        self.control_vbox.pack_start(controller_label, False)
-        self.control_vbox.pack_start(self.comp_radio, False)
-        self.control_vbox.pack_start(self.P_control_radio, False)
-        self.control_vbox.pack_start(self.ol_radio, False)
-        kp_hbox = gtk.HBox(homogeneous=False)
-        kp_hbox.pack_start(kplabel, False)
-        kp_hbox.pack_start(self.kp_entry, False)
-        self.control_vbox.pack_start(kp_hbox)
+        scrolled_window = gtk.ScrolledWindow()
+        scrolled_window.set_border_width(10)
+
+        # the policy is one of POLICY AUTOMATIC, or POLICY_ALWAYS.
+        # POLICY_AUTOMATIC will automatically decide whether you need
+        # scrollbars, whereas POLICY_ALWAYS will always leave the scrollbars
+        # there. The first one is the horizontal scrollbar, the second, the
+        # vertical.
+        scrolled_window.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+
+        # The dialog window is created with a vbox packed into it.
+        self.control_vbox.pack_start(scrolled_window, True, True, 0)
+        scrolled_window.show()
+
+        # create a table of 10 by 10 squares.
+        vbox1 = gtk.VBox(homogeneous=False, spacing=0)
+
+        # pack the table into the scrolled window
+        scrolled_window.add_with_viewport(vbox1)
+        vbox1.show()
         
-        self.control_vbox.pack_start(sep1, False)
+        vbox1.pack_start(sep0, False)
+        vbox1.pack_start(controller_label, False)
+        vbox1.pack_start(self.comp_radio, False)
+        vbox1.pack_start(self.P_control_radio, False)
+        vbox1.pack_start(self.PID_control_radio, False)
+        vbox1.pack_start(self.ol_radio, False)
+        kp_hbox = gtk.HBox(homogeneous=False)
+        kp_hbox.pack_start(self.kp_label, False)
+        kp_hbox.pack_start(self.kp_entry, False)
+        kp_hbox.pack_start(self.ki_label, False)
+        kp_hbox.pack_start(self.ki_entry, False)
+        kp_hbox.pack_start(self.kd_label, False)
+        kp_hbox.pack_start(self.kd_entry, False)
+        vbox1.pack_start(kp_hbox)
+        
+        vbox1.pack_start(sep1, False)
         # Add vibration suppression radio to gui
-        self.control_vbox.pack_start(vib_label, False)
-        self.control_vbox.pack_start(self.vib_on_radio, False)
-        self.control_vbox.pack_start(self.vib_off_radio, False)
+        vbox1.pack_start(vib_label, False)
+        vbox1.pack_start(self.vib_on_radio, False)
+        vbox1.pack_start(self.vib_off_radio, False)
         self.control_vbox.pack_start(sep2, False)
         self.control_vbox.pack_start(self.reset_button, False)
         self.control_vbox.pack_start(self.return_button, False)
@@ -320,7 +376,9 @@ class SFLR_gui(research_gui.base_class):
         research_gui.base_class.__init__(self, title='SFLR GUI v. 3.0 - ME 450', \
                                          debug=debug, \
                                          plot_attrs=attrs, \
-                                         plot_labels=labels)
+                                         plot_labels=labels, \
+                                         width=900, \
+                                         height=650)
         
         #create control test case
         p = 20.0*2*pi
@@ -344,8 +402,10 @@ class SFLR_gui(research_gui.base_class):
         self.test.use_accel_fb = False
         self.comp_test = copy.deepcopy(self.test)
         self.P_control_test = SLFR_RTP.P_control_Test(kp=2.0, neg_accel=neg_accel)
+        self.PID_control_test = SLFR_RTP.PID_control_Test(kp=2.0, ki=0.0, kd=0.0, \
+                                                          neg_accel=neg_accel)
         self.OL_test = SLFR_RTP.OL_Test(neg_accel=neg_accel)
-        self.input_notebook.set_current_page(1)
+        self.input_notebook.set_current_page(0)
         
 
 
