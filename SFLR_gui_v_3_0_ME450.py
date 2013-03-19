@@ -364,8 +364,8 @@ class SFLR_gui(research_gui.base_class):
     def __init__(self, debug=0):
         ## attrs = ['uvect','vvect','yvect','avect','thd_hatvect']
         ## labels = ['u','v','$\\theta$','a','$\\hat{\\theta}_d$']
-        attrs = ['uvect','yvect']
-        labels = ['u','$\\theta$']
+        attrs = ['uvect','vvect','yvect']
+        labels = ['u','v','$\\theta$']
         
         plot_accel = False
         if plot_accel:
@@ -381,9 +381,9 @@ class SFLR_gui(research_gui.base_class):
                                          height=650)
         
         #create control test case
-        p = 20.0*2*pi
+        p = 30.0*2*pi
         z = 5.0*2*pi
-        gain = 5.0
+        gain = 3.0
         self.Gth = controls.TransferFunction([1,z], [1,p])*gain*(p/z)
         C_opt = array([ 36.49022971, 172.15528440, 15.39673089, \
                         467.22634242, 281.56096177])
