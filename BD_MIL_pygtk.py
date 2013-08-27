@@ -150,7 +150,7 @@ class BD_MIL_app(rwkmisc.object_that_saves):
         self.image_on_sw.set_size_request(750,200)
         #self.hpaned.add1(self.image_on_sw)
         self.h1.pack_start(self.image_on_sw, *pack_args_w_pad)
-        hard_coded_path = '/home/ryan/siue/Research/papers/ASEE_IL_IN_BD_MIL/tikz_sys_test.jpg'
+        hard_coded_path = '/Users/rkrauss/siue/Research/papers/ASEE_IL_IN_BD_MIL/tikz_sys_test.jpg'
         self.image_on_sw.set_from_path(hard_coded_path)
         self.image_on_sw.show()
 
